@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:latest
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pgpassword
+      POSTGRES_DB: goserver
+      POSTGRES_INITDB_ARGS: "--no-ssl"
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - 8081:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: pgpassword
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+
+  api:
+    build: /
+    hostname: api
+    restart: unless-stopped
+    environment:
+      GS_DATABASE_PORT: 5432
+      GS_DATABASE_USER: postgres
+      GS_DATABASE_PASSWORD: pgpassword
+      GS_DATABASE_NAME: goserver
+      GS_DATABASE_HOST: db
+    depends_on:
+      - db
+    ports:
+      - 3000:3000
+
+volumes:
+  db:
+    driver: local
+  pgadmin:
+    driver: local
